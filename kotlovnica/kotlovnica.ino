@@ -91,7 +91,7 @@ void loop() {
   if(tempPec >= tempHigh) {
     digitalWrite(relayPump1, LOW); // PROVJERITI DAL JE HIGH ILI LOW
   } else if(tempPec <= tempLow) {
-    digitalWrite(relayPump1, LOW);
+    digitalWrite(relayPump1, HIGH);
   }
 
   // PALJENJE / GAŠENJE PUMPE SOLARNOG GRIJANJA
