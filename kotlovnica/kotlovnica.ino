@@ -31,16 +31,22 @@ int relayPump1 = 23; // PUMPA GRIJANJA
 int relayPump2 = 25; // PUMPA SOLARNOG GRIJANJA
 // int relayPump3 = 27; // PUMPA SANITARNE VODE (PRIPREMA)
 
-// DEFINIRANJE PINA ZA BUZZER
+// DEFINIRANJE PINA I STATE-a ZA BUZZER
 int buzzerPin = 50;
+int buzzerState = LOW;
 
 // DEFINIRANJE VARIJABLI GRANIČNIH TEMPERATURA
 int tempHigh = 70; // GRANICA PALJENJA PUMPE GRIJANJA
 int tempLow = 65; // GRANICA GAŠENJA PUMPE GRIJANJA
 int tempDif = 7; // GRANICA PALJENJA PUMPE SOLARNOG GRIJANJA
+int tempDanger = 90; // SIGURNOSNA GRANICA TEMPERATURE PEĆI
 
 // DEFINIRANJE VARIJABLE ZA PALJENJE / GAŠENJE PUMPE SOLARNOG GRIJANJA
 int solar = 0;
+
+// DEFINIRANJE VARIJABLI ZA INTERVALNO PALJENJE BUZZERA
+unsigned long previousMillis = 0;
+const long interval = 1000; // VRIJEME INTERVALA BUZZERA
 
 void setup() {
   // INICIJALIZACIJA PINOVA ZA RELEJE I GASENJE RELEJA
@@ -77,6 +83,23 @@ void loop() {
   tempBojler2 = sensors4.getTempCByIndex(0);
   tempBojler3 = sensors5.getTempCByIndex(0);
   tempSolar = sensors6.getTempCByIndex(0);
+
+  // PALJENJE BUZZERA I PUMPE KOD PREVISOKE TEMPERATURE
+  if(tempPec >= tempDanger) {
+    digitalWrite(relayPump1, LOW); // PROVJERITI DAl JE HIGH ILI LOW
+
+    // PALJENJE BUZZERA NA INTERVALE
+    unsigned long currentMillis = millis();
+    if(currentMillis - previousMillis >= interval) {
+      previousMillis = currentMillis;
+      if(buzzerState == LOW) {
+        buzzerState = HIGH;
+      } else {
+        buzzerState = LOW;
+      }
+      digitalWrite(buzzerPin, buzzerState);
+    }
+  }
 
   // IZRAČUNAVANJE RAZLIKE TEMPERATURA I PROMJENA STANJA VARIJABLE
   tempRazlika = tempSolar - tempBojler2; // PROVJERI S NIKOLOM
