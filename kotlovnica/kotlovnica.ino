@@ -112,13 +112,15 @@ int tempHigh = 70; // GRANICA PALJENJA PUMPE GRIJANJA
 int tempLow = 65; // GRANICA GAŠENJA PUMPE GRIJANJA
 int tempDifHigh = 7; // GRANICA PALJENJA PUMPE SOLARNOG GRIJANJA
 int tempDifLow = 2; // GRANICA GAŠENJA PUMPE SOLARNOG GRIJANJA
-int tempDanger = 90; // SIGURNOSNA GRANICA TEMPERATURE PEĆI
+int tempDanger = 100; // SIGURNOSNA GRANICA TEMPERATURE PEĆI
+int tempDangerSolar = 100; // SIGURNOSNA GRANICA TEMPERATURE SOLARNOG KOLEKTORA
 
 // DEFINIRANJE VARIJEBLI ZA MANUALNO PALJENJE / GAŠENJE PUMPI
 int pump1 = 0;
 int pump2 = 0;
 
-// DEFINIRANJE VARIJABLE ZA PALJENJE / GAŠENJE PUMPE SOLARNOG GRIJANJA
+// DEFINIRANJE VARIJABLE ZA PALJENJE / GAŠENJE PUMPI
+int pec = 0;
 int solar = 0;
 
 // DEFINIRANJE VARIJABLI ZA INTERVALNO PALJENJE SENZORA PEČI I SOLARNOG
@@ -126,12 +128,13 @@ unsigned long previousMillis = 0;
 const long interval = 3000; // VRIJEME INTERVALA SENZORA
 
 // DEFINIRANJE VARIJABLI ZA INTERVALNO PALJENJE BUZZERA
+int buzz = 0;
 unsigned long previousMillis2 = 0;
-const long interval2 = 1000; // VRIJEME INTERVALA BUZZERA
+const long interval2 = 3000; // VRIJEME INTERVALA BUZZERA
 
 // DEFINIRANJE VARIJABLI ZA INTERVALNO PALJENJE SENZORA POVRATA I BOJLERA
 unsigned long previousMillis3 = 0;
-const long interval3 = 60000; // VRIJEME INTERVALA SENZORA
+const long interval3 = 30000; // VRIJEME INTERVALA SENZORA
 
 // DEFINIRANJE VARIJABLI ZA INTERVALE ZA ON/OFF
 unsigned long previousMillis4 = 0;
@@ -170,7 +173,7 @@ int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
   void ButtonRelease4 (void *ptr) {
   if(tempHigh >= 85) {
   } else {
-    tempHigh = tempHigh + 5;
+    tempHigh = tempHigh + 2;
     n60.setValue(tempHigh);
     /*
     Serial.println("tempHigh is: ");
@@ -183,7 +186,7 @@ int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
   void ButtonRelease5 (void *ptr) {
   if(tempHigh <= 65) {
   } else {
-    tempHigh = tempHigh - 5;
+    tempHigh = tempHigh - 2;
     n60.setValue(tempHigh);
     /*
     Serial.println("tempHigh is: ");
@@ -196,7 +199,7 @@ int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
   void ButtonRelease6 (void *ptr) {
   if(tempLow >= 75) {
   } else {
-    tempLow = tempLow + 5;
+    tempLow = tempLow + 2;
     n61.setValue(tempLow);
     /*
     Serial.println("tempLow is: ");
@@ -209,7 +212,7 @@ int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
   void ButtonRelease7 (void *ptr) {
   if(tempLow <= 55) {
   } else {
-    tempLow = tempLow - 5;
+    tempLow = tempLow - 2;
     n61.setValue(tempLow);
     /*
     Serial.println("tempLow is: ");
@@ -357,10 +360,10 @@ void loop() {
   sensors5.requestTemperatures();
 
   // POHRANJIVANJE TEMPERATURA U VARIJABLE
-  tempPovrat = sensors2.getTempCByIndex(0);
-  tempBojler1 = sensors3.getTempCByIndex(0);
-  tempBojler2 = sensors4.getTempCByIndex(0);
-  tempBojler3 = sensors5.getTempCByIndex(0);   
+  tempPovrat = sensors2.getTempCByIndex(0); // POVRAT
+  tempBojler3 = sensors3.getTempCByIndex(0); // BOJLER ZONA 1
+  tempBojler2 = sensors4.getTempCByIndex(0); // BOJLER ZONA 2
+  tempBojler1 = sensors5.getTempCByIndex(0); // BOJLER ZONA 3  
     
   // ISPISIVANJE U SERIAL MONITOR ZA DEBUGGING
   /*
@@ -457,14 +460,42 @@ void loop() {
      }
    }
 
-  // PALJENJE BUZZERA I PUMPE KOD PREVISOKE TEMPERATURE
+  // PALJENJE BUZZERA I PUMPE GRIJANJA KOD PREVISOKE TEMPERATURE
   if(tempPec >= tempDanger) {
-    pump1 = 1;
     digitalWrite(relayPump1, LOW);
     x = 1;
-    
-      // PALJENJE BUZZERA NA INTERVALE
-      if (currentMillis - previousMillis2 >= interval2) {
+    buzz = 1;
+    pec = 1;
+  }
+
+  // GAŠENJE BUZZERA KOD PREVISOKE TEMPERATURE PECI
+  if(pec == 1) {
+      if(tempPec < tempDanger) {
+      x = 0;
+      pec = 0;
+      buzz = 0;
+    }
+  }
+  
+  // PALJENJE BUZZERA I PUMPE SOLARNOG GRIJANJA KOD PREVISOKE TEMPERATURE
+  if(tempSolar >= tempDangerSolar) {
+    digitalWrite(relayPump2, LOW);
+    y = 1;
+    buzz = 1;
+  }
+
+  // GAŠENJE BUZZERA I PUMPE SOLARNOG GRIJANJA KOD PREVISOKE TEMPERATURE
+  if(solar == 1) {
+      if(tempSolar < tempDangerSolar) {
+      digitalWrite(relayPump2, HIGH);
+      y = 0;
+      buzz = 0;
+    }
+  }
+  
+  // PALJENJE BUZZERA NA INTERVALE
+  if(buzz == 1) {
+    if (currentMillis - previousMillis2 >= interval2) {
       previousMillis2 = currentMillis;
       if (buzzerState == LOW) {
         buzzerState = HIGH;
@@ -475,7 +506,6 @@ void loop() {
     }
   }
   
-
   // IZRAČUNAVANJE RAZLIKE TEMPERATURA I PROMJENA STANJA VARIJABLE
   tempRazlika = tempSolar - tempBojler2;
   /*
@@ -500,7 +530,6 @@ void loop() {
     }
   }
   
-
   // PALJENJE / GAŠENJE PUMPE SOLARNOG GRIJANJA
   if(pump2 == 0) {
      if(solar == 1) {
@@ -512,5 +541,18 @@ void loop() {
     }
   }
 
-}
+  // PALJENJE PUMPE GRIJANJA U SLUČAJU KVARA SENZORA
+  if(tempPec == -127) {
+    digitalWrite(relayPump1, LOW);
+    x = 1;
+    pump1 = 1;
+  }
+  
+  // PALJENJE PUMPE SOLARNOG GRIJANJA U SLUČAJU KVARA SENZORA
+  if(tempSolar == -127) {
+    digitalWrite(relayPump2, LOW);
+    y = 1;
+    pump2 = 1;
+  }
 
+}
