@@ -140,6 +140,10 @@ const long interval3 = 30000; // VRIJEME INTERVALA SENZORA
 unsigned long previousMillis4 = 0;
 const long interval4 = 1000; // VRIJEME INTERVALA
 
+// DEFINIRANJE VARIJABLI ZA PALJENJE PUMPI U SLUČAJU KVARA SENZORA
+int error1 = 0;
+int error2 = 0;
+
 int a = 0; // VARIJABLA ZA INICIJALNO DOBIVANJE TEMPERATURA
 int x = 0; // VARIJABLA ZA ON/OFF PUMPE GRIJANJA
 int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
@@ -398,9 +402,9 @@ void loop() {
 
       // POHRANJIVANJE TEMPERATURA U VARIJABLE
       tempPovrat = sensors2.getTempCByIndex(0);
-      tempBojler1 = sensors3.getTempCByIndex(0);
+      tempBojler3 = sensors3.getTempCByIndex(0);
       tempBojler2 = sensors4.getTempCByIndex(0);
-      tempBojler3 = sensors5.getTempCByIndex(0);   
+      tempBojler1 = sensors5.getTempCByIndex(0);   
     
       // ISPISIVANJE U SERIAL MONITOR ZA DEBUGGING
       /*
@@ -546,6 +550,10 @@ void loop() {
     digitalWrite(relayPump1, LOW);
     x = 1;
     pump1 = 1;
+    error1 = 1;
+  } else if(tempPec > -127 && error1 == 1) {
+    error1 = 0;
+    pump1 = 0;
   }
   
   // PALJENJE PUMPE SOLARNOG GRIJANJA U SLUČAJU KVARA SENZORA
@@ -553,6 +561,10 @@ void loop() {
     digitalWrite(relayPump2, LOW);
     y = 1;
     pump2 = 1;
+    error2 = 1;
+  } else if(tempSolar > -127 && error2 == 1) {
+    error2 = 0;
+    pump2 = 0;
   }
 
 }
