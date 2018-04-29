@@ -98,6 +98,10 @@ int tempBojler3;
 int tempSolar;
 int tempRazlika;
 
+// DEFINIRANJE VARIJABLI ZA POHRANJIVANJE PRETHODNE TEMPERATURE SA SENZORA
+int tempPecOld;
+int tempSolarOld;
+
 // DEFINIRANJE PINOVA ZA RELEJE
 int relayPump1 = 8; // PUMPA GRIJANJA
 int relayPump2 = 9; // PUMPA SOLARNOG GRIJANJA
@@ -279,10 +283,10 @@ int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
 
  // RESETIRANJE GRANIČNIH TEMPERATURA
   void ButtonRelease12 (void *ptr) {
-    tempHigh = 70; // GRANICA PALJENJA PUMPE GRIJANJA
-    tempLow = 65; // GRANICA GAŠENJA PUMPE GRIJANJA
-    tempDifHigh = 7; // GRANICA PALJENJA PUMPE SOLARNOG GRIJANJA
-    tempDifLow = 2; // GRANICA GAŠENJA PUMPE SOLARNOG GRIJANJA
+    tempHigh = 68; // GRANICA PALJENJA PUMPE GRIJANJA
+    tempLow = 56; // GRANICA GAŠENJA PUMPE GRIJANJA
+    tempDifHigh = 20; // GRANICA PALJENJA PUMPE SOLARNOG GRIJANJA
+    tempDifLow = 7; // GRANICA GAŠENJA PUMPE SOLARNOG GRIJANJA
     /*
     Serial.println(tempHigh);
     Serial.println(tempLow);
@@ -427,6 +431,9 @@ void loop() {
 
     if(currentMillis - previousMillis >= interval) {
       previousMillis = currentMillis;
+      // POHRANJIVANJE STARIH TEMPERATURA U VARIJABLE
+      tempPecOld = tempPec;
+      tempSolarOld = tempSolar;
       // DOBIVANJE TEMPERATURI SA SENZORA
       // Serial.println("Requesting temperatures!");
       sensors1.requestTemperatures();
@@ -436,7 +443,6 @@ void loop() {
       tempPec = sensors1.getTempCByIndex(0);
       tempSolar = sensors6.getTempCByIndex(0);
       
-    
       // ISPISIVANJE U SERIAL MONITOR ZA DEBUGGING
       /*
       Serial.println("Temperature u peci: ");
@@ -446,8 +452,10 @@ void loop() {
       */
 
       // ISPISIVANJE TEMPERATURA NA NEXTION
-      n0.setValue(tempPec);
-      n5.setValue(tempSolar);
+      if(tempPecOld != tempPec) {
+        n0.setValue(tempPec);
+        n5.setValue(tempSolar);
+      } 
     }
 
     if(currentMillis - previousMillis4 >= interval4) {
