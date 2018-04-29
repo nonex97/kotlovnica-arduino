@@ -452,10 +452,12 @@ void loop() {
       */
 
       // ISPISIVANJE TEMPERATURA NA NEXTION
-      if(tempPecOld != tempPec) {
+      if(tempPec != tempPecOld) {
         n0.setValue(tempPec);
+      }
+      if(tempSolar != tempSolarOld) {
         n5.setValue(tempSolar);
-      } 
+      }
     }
 
     if(currentMillis - previousMillis4 >= interval4) {
