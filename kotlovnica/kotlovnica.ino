@@ -32,6 +32,9 @@
 #include <DallasTemperature.h>
 #include <OneWire.h>
 
+// LIBRARY ZA RESET ARDUINA
+#include <avr/wdt.h>
+
 // DEFINIRANJE KOMPONENTI NA NEXTION-u
 NexButton myButton0 = NexButton(0,5,"page0.b2"); // TIPKA ZA MANUALNO PALJENJE PUMPE GRIJANJA
 NexButton myButton1 = NexButton(0,6,"page0.b3"); // TIPKA ZA MANUALNO GAŠENJE PUMPE GRIJANJA
@@ -117,7 +120,7 @@ int tempLow = 56; // GRANICA GAŠENJA PUMPE GRIJANJA
 int tempDifHigh = 20; // GRANICA PALJENJA PUMPE SOLARNOG GRIJANJA
 int tempDifLow = 7; // GRANICA GAŠENJA PUMPE SOLARNOG GRIJANJA
 int tempDanger = 100; // SIGURNOSNA GRANICA TEMPERATURE PEĆI
-int tempDangerSolar = 100; // SIGURNOSNA GRANICA TEMPERATURE SOLARNOG KOLEKTORA
+int tempDangerSolar = 115; // SIGURNOSNA GRANICA TEMPERATURE SOLARNOG KOLEKTORA
 
 // DEFINIRANJE VARIJEBLI ZA MANUALNO PALJENJE / GAŠENJE PUMPI
 int pump1 = 0;
@@ -315,6 +318,9 @@ int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
 
 
 void setup() {
+  // INICIJALIZACIJA ZA RESET ARDUINA
+  watchdogOn();
+  
   // INICIJALIZACIJA PINOVA ZA RELEJE I GASENJE RELEJA
   pinMode(relayPump1, OUTPUT);
   pinMode(relayPump2, OUTPUT);
@@ -577,4 +583,14 @@ void loop() {
     pump2 = 0;
   }
 
+  wdt_reset();
+
+}
+
+void watchdogOn() {
+  MCUSR = MCUSR & B11110111;
+  WDTCSR = WDTCSR | B00011000; 
+  WDTCSR = B00100001;
+  WDTCSR = WDTCSR | B01000000;
+  MCUSR = MCUSR & B11110111;
 }
