@@ -35,6 +35,10 @@
 // LIBRARY ZA RESET ARDUINA
 #include <avr/wdt.h>
 
+// LIBRARY ZA WIFI I BLYNK
+#include <ESP8266_Lib.h>
+#include <BlynkSimpleShieldEsp8266.h>
+
 // DEFINIRANJE KOMPONENTI NA NEXTION-u
 NexButton myButton0 = NexButton(0,5,"page0.b2"); // TIPKA ZA MANUALNO PALJENJE PUMPE GRIJANJA
 NexButton myButton1 = NexButton(0,6,"page0.b3"); // TIPKA ZA MANUALNO GAŠENJE PUMPE GRIJANJA
@@ -75,6 +79,15 @@ NexTouch *nex_listen_list[] = {
   NULL
 };
 
+// DEFINIRANJE VARIJABLI ZA WIFI I BLYNK
+#define BLYNK_PRINT Serial
+char auth[] = "7dc5d239d7a14e1abba7c3f473d91ea5";
+char ssid[] = "WLAN2";
+char pass[] = "2011970361609";
+#define EspSerial Serial1
+#define ESP8266_BAUD 9600
+ESP8266 wifi(&EspSerial);
+
 
 // DEFINIRANJE PINOVA ZA SENZORE TEMPERATURE
 OneWire oneWire1(2);
@@ -109,6 +122,10 @@ int tempSolarOld;
 int relayPump1 = 8; // PUMPA GRIJANJA
 int relayPump2 = 9; // PUMPA SOLARNOG GRIJANJA
 // int relayPump3 = 27; // PUMPA SANITARNE VODE (PRIPREMA)
+
+// DEFINIRANJE STATE-a RELAY-a ZA BLYNK
+int relay1State = 0;
+int relay2State = 0;
 
 // DEFINIRANJE PINA I STATE-a ZA BUZZER
 int buzzerPin = 50;
@@ -161,24 +178,28 @@ int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
     digitalWrite(8,LOW);
     pump1 = 1;
     x = 1;
+    Blynk.virtualWrite(V6, 1);
   }
   // MANUALNO GAŠENJE PUMPE GRIJANJA
   void ButtonRelease1 (void *ptr) {
     digitalWrite(8,HIGH);
     pump1 = 0;
     x = 0;
+    Blynk.virtualWrite(V6, 0);
   }
   // MANUALNO PALJENJE PUMPE SOLARNOG GRIJANJA
   void ButtonRelease2 (void *ptr) {
     digitalWrite(9,LOW);
     pump2 = 1;
     y = 1;
+    Blynk.virtualWrite(V7, 1);
   }
   // MANUALNO GAŠENJE PUMPE SOLARNOG GRIJANJA
   void ButtonRelease3 (void *ptr) {
     digitalWrite(9,HIGH);
     pump2 = 0;
     y = 0;
+    Blynk.virtualWrite(V7, 0);
   }
   // POVIŠAVANJE GRANICE PALJENJA PUMPE GRIJANJA (tempHigh)
   void ButtonRelease4 (void *ptr) {
@@ -316,10 +337,27 @@ int y = 0; // VARIJABLA ZA ON/OFF PUMPE SOLARNOG GRIJANJA
     n5.setValue(tempSolar);
  }
 
+ // PALJENJE PUMPE GRIJANJA IZ BLYNK-a
+ BLYNK_WRITE(V6)
+  {
+     relay1State = param.asInt(); // Get the state of the VButton
+     digitalWrite(relayPump1, relay1State);
+  }
+  BLYNK_WRITE(V7)
+  {
+     relay2State = param.asInt(); // Get the state of the VButton
+     digitalWrite(relayPump2, relay2State);
+  }
+
 
 void setup() {
   // INICIJALIZACIJA ZA RESET ARDUINA
   watchdogOn();
+
+  // INICIJALIZACIJA ZA WIFI I BLYNK
+  EspSerial.begin(ESP8266_BAUD);
+  delay(10);
+  Blynk.begin(auth, wifi, ssid, pass);
   
   // INICIJALIZACIJA PINOVA ZA RELEJE I GASENJE RELEJA
   pinMode(relayPump1, OUTPUT);
@@ -366,6 +404,9 @@ void loop() {
   //INCIJALIZACIJA NEXTION LOOP-a
   nexLoop(nex_listen_list);
 
+  // INICIJALIZACIJA BLYNK LOOP-a
+  Blynk.run();
+
  if (a == 0){
   // PRVO DOBIVANJE TEMPERATURE
   sensors2.requestTemperatures();
@@ -396,6 +437,10 @@ void loop() {
   n2.setValue(tempBojler1);
   n3.setValue(tempBojler2);
   n4.setValue(tempBojler3);
+
+  // SLANJE TEMPERATURA NA BLYNK
+  Blynk.virtualWrite(V2, tempBojler3);
+  Blynk.virtualWrite(V3, tempBojler2);
   a = 1;
  }
 
@@ -433,6 +478,10 @@ void loop() {
       n2.setValue(tempBojler1);
       n3.setValue(tempBojler2);
       n4.setValue(tempBojler3);
+
+      // SLANJE TEMPERATURA NA BLYNK
+      Blynk.virtualWrite(V2, tempBojler3);
+      Blynk.virtualWrite(V3, tempBojler2);
     }
 
     if(currentMillis - previousMillis >= interval) {
@@ -464,6 +513,10 @@ void loop() {
       if(tempSolar != tempSolarOld) {
         n5.setValue(tempSolar);
       }
+
+      // SLANJE TEMPERATURA NA BLYNK
+      Blynk.virtualWrite(V0, tempPec);
+      Blynk.virtualWrite(V1, tempSolar);
     }
 
     if(currentMillis - previousMillis4 >= interval4) {
